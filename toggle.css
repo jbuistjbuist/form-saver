@@ -4,7 +4,7 @@ body {
   box-sizing: border-box;
   font-family: "Titillium Web", sans-serif;
   width: 220px;
-  height: 180px;
+  height: 185px;
 }
 
 main {
@@ -105,12 +105,24 @@ input:checked + .slider:before {
 }
 
 .clear_button {
+  text-align: center;
   border-radius: 15px;
   height: 30px;
   width: 80px;
   border: none;
   margin-top: 0.2rem;
   background-color: #faf9f6;
+  transition: ease-in-out 0.1s;
+}
+
+.clear_button:hover {
+  background-color: #b63929;
+  color: #faf9f6;
+  cursor: pointer;
+}
+
+.clear_button:active {
+  transform: scale(1.1)
 }
 
 .clear_button.disabled {
