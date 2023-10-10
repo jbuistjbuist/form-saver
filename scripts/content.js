@@ -51,74 +51,43 @@
 
   //check if there is already data for this page
   const storedData = await chrome.runtime.sendMessage({ handle, get: true });
-  const prevData = storedData[handle];
+  const prevData = storedData[handle] || {};
+  const saveInitial = Object.keys(prevData).length === 0;
 
+  //loop through each form
+  forms.forEach((form) => {
+    //get the form xpath relative to the page
+    const formXpath = getXPath(form, "html");
+    if (!prevData[formXpath]) prevData[formXpath] = {};
+    const formData = prevData[formXpath] || {};
 
+    //get all the inputs in the form
+    const inputs = form.querySelectorAll("input");
+    const selects = form.querySelectorAll("select");
+    const textareas = form.querySelectorAll("textarea");
+    const allInputs = [...inputs, ...selects, ...textareas];
 
-  if (prevData) {
-    //loop through each form
-    forms.forEach((form) => {
-      //get the form xpath relative to the page
-      const formXpath = getXPath(form, "html");
-      const formData = prevData[formXpath];
-      console.log(formData, "formData");
-
-      //get all the inputs in the form
-      const inputs = form.querySelectorAll("input");
-      const selects = form.querySelectorAll("select");
-      const textareas = form.querySelectorAll("textarea");
-
-      const allInputs = [...inputs, ...selects, ...textareas];
-      //loop through each input
-      allInputs.forEach((input) => {
-        const inputXpath = getXPath(input, "form");
-        //if there is data for this input, set the value to the data
-        input.addEventListener("change", async (e) => {
-          await chrome.runtime.sendMessage({
-            handle,
-            set: true,
-            data: {
-              ...prevData,
-              [formXpath]: { ...formData, [inputXpath]: input.value },
-            },
-          });
-        });
-
-        if (formData[inputXpath]) {
-          input.setAttribute("value", formData[inputXpath]);
-        }
-      });
-    });
-  } else {
-    //create an object to store the form data
-    const data = {};
-
-    //loop through each form
-    forms.forEach((form) => {
-      //get the form xpath relative to the page
-      const formXpath = getXPath(form, "html");
-      data[formXpath] = {};
-      const formData = data[formXpath];
-
-      //get all the inputs in the form
-      const inputs = form.querySelectorAll("input");
-      const selects = form.querySelectorAll("select");
-      const textareas = form.querySelectorAll("textarea");
-
-      const allInputs = [...inputs, ...selects, ...textareas];
-      //loop through each input
-      allInputs.forEach((input) => {
-        const inputXpath = getXPath(input, "form");
-        //add an event listener to the input, so that when the value changes, it is saved to the object
-        input.addEventListener("change", async (e) => {
-          formData[inputXpath] = input.value;
-          await chrome.runtime.sendMessage({ handle, set: true, data });
-        });
-        //get the input xPath relative to the form
+    //loop through each input
+    allInputs.forEach((input) => {
+      const inputXpath = getXPath(input, "form");
+      //if there is data for this input, set the value to the data
+      if (formData[inputXpath]) {
+        input.setAttribute("value", formData[inputXpath]);
+      } else {
         formData[inputXpath] = input.value;
+      }
+
+      //add an event listener to the input, so that when the value changes, it is saved to the object
+      input.addEventListener("change", async (e) => {
+        prevData[formXpath][inputXpath] = e.target.value;
+        await chrome.runtime.sendMessage({
+          handle,
+          set: true,
+          data: prevData,
+        });
       });
     });
-    //save the object to storage via the background script
-    chrome.runtime.sendMessage({ handle, set: true, data });
-  }
+  });
+  //save the data to chrome storage
+  saveInitial && chrome.runtime.sendMessage({ handle, set: true, prevData });
 })();
