@@ -62,7 +62,7 @@
 
     //loop through each form
     forms.forEach((form) => {
-      //get the form id
+      //get the form xpath relative to the page
       const formXpath = getXPath(form, "html");
       data[formXpath] = {};
       const formData = data[formXpath];
@@ -73,15 +73,21 @@
       const textareas = form.querySelectorAll("textarea");
 
       const allInputs = [...inputs, ...selects, ...textareas];
-
       //loop through each input
       allInputs.forEach((input) => {
-        //get the input xPath
-        const inputXpath = getXPath(input);
+        const inputXpath = getXPath(input, "form");
+        //add an event listener to the input, so that when the value changes, it is saved to the object
+        input.addEventListener("change", async (e) => {
+          formData[inputXpath] = input.value;
+          console.log("data in listener", data);
+          await chrome.runtime.sendMessage({ handle, set: true, data });
+        });
+        //get the input xPath relative to the form
         formData[inputXpath] = input.value;
       });
     });
 
+    console.log("data", data);
     //save the object to storage via the background script
     await chrome.runtime.sendMessage({ handle, set: true, data });
   }
