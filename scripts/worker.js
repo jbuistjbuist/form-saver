@@ -11,5 +11,6 @@
         .then(sendResponse({ success: true }));
       return true;
     }
+
   });
 })();

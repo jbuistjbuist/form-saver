@@ -88,6 +88,20 @@
       });
     });
   });
+
+  chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+    if (message.clear) {
+      chrome.storage.local.remove(handle);
+      const inputs = document.querySelectorAll("input");
+      const selects = document.querySelectorAll("select");
+      const textareas = document.querySelectorAll("textarea");
+      const allInputs = [...inputs, ...selects, ...textareas];
+      allInputs.forEach((input) => {
+        input.setAttribute("value", "");
+      });
+      sendResponse({ success: true });
+    }
+  });
   //save the data to chrome storage
   saveInitial && chrome.runtime.sendMessage({ handle, set: true, prevData });
 })();

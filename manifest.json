@@ -4,7 +4,7 @@
   "description": "Persist form data across page reloads and navigation. Saves you from entering the same data twice if you refresh a page or navigate away from it.",
   "version": "1.0",
   "action": {
-    "default_popup": "toggle.html",
+    "default_popup": "popup/toggle.html",
     "default_icon": "images/icon-16.png"
   },
   "icons": {
@@ -19,13 +19,9 @@
   "content_scripts": [
     {
       "js": ["scripts/content.js"],
-      "matches": [
-        "<all_urls>"
-      ],
+      "matches": ["<all_urls>"],
       "run_at": "document_end"
     }
   ],
-  "permissions": [
-    "storage"
-  ]
+  "permissions": ["storage"]
 }
