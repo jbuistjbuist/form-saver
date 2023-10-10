@@ -1,6 +1,11 @@
 (async () => {
+  //find any forms on the page, if there are none, stop the script
+  const forms = document.querySelectorAll("form");
+  if (!forms.length) return;
+
   //credit to Ab. Karim, https://dev.to/abkarim/html-element-to-absolute-xpath-selector-javascript-4g82 for this xpath function
-  function getXPath(element) {
+  //this function takes an element and returns its xpath, to identify it later
+  function getXPath(element, root) {
     console.log("element", element);
     let selector = "";
     let foundRoot;
@@ -36,23 +41,19 @@
       // Set parent element to current element
       current = parent;
       // Is root
-      foundRoot = parent.tagName.toLowerCase() === "html";
+      foundRoot = parent.tagName.toLowerCase() === root;
       // Finish selector if found root element
-      if (foundRoot) selector = `/html${selector}`;
+      if (foundRoot) selector = `/${root}${selector}`;
     } while (!foundRoot);
 
     return selector;
   }
 
-  //get the handle from the url
+  //get the handle from the url, to identify the page later
   const handle = window.location.href + "formsaver📌";
 
-  //find any forms on the page
-  const forms = document.querySelectorAll("form");
-
-  const prevData = await chrome.runtime.sendMessage({ handle });
-
-  console.log("prevData", prevData);
+  //check if there is already data for this page
+  const prevData = await chrome.runtime.sendMessage({ handle, get: true });
 
   if (prevData) {
   } else {
@@ -60,29 +61,28 @@
     const data = {};
 
     //loop through each form
-    forms.length &&
-      forms.forEach((form) => {
-        //get the form id
-        const formXpath = getXPath(form);
-        data[formXpath] = {};
-        const formData = data[formXpath];
+    forms.forEach((form) => {
+      //get the form id
+      const formXpath = getXPath(form, "html");
+      data[formXpath] = {};
+      const formData = data[formXpath];
 
-        //get all the inputs in the form
-        const inputs = form.querySelectorAll("input");
-        const selects = form.querySelectorAll("select");
-        const textareas = form.querySelectorAll("textarea");
+      //get all the inputs in the form
+      const inputs = form.querySelectorAll("input");
+      const selects = form.querySelectorAll("select");
+      const textareas = form.querySelectorAll("textarea");
 
-        const allInputs = [...inputs, ...selects, ...textareas];
+      const allInputs = [...inputs, ...selects, ...textareas];
 
-        //loop through each input
-        allInputs.forEach((input) => {
-          //get the input xPath
-          const inputXpath = getXPath(input);
-          formData[inputXpath] = input.value;
-        });
+      //loop through each input
+      allInputs.forEach((input) => {
+        //get the input xPath
+        const inputXpath = getXPath(input);
+        formData[inputXpath] = input.value;
       });
+    });
 
-    //save the object to local storage
-    localStorage.setItem(handle, JSON.stringify(obj));
+    //save the object to storage via the background script
+    await chrome.runtime.sendMessage({ handle, set: true, data });
   }
 })();
