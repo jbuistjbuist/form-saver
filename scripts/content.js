@@ -1,8 +1,4 @@
 (async () => {
-  //find any forms on the page, if there are none, stop the script
-  const forms = document.querySelectorAll("form");
-  if (!forms.length) return;
-
   //credit to Ab. Karim, https://dev.to/abkarim/html-element-to-absolute-xpath-selector-javascript-4g82 for this xpath function
   //this function takes an element and returns its xpath, to identify it later
   function getXPath(element, root) {
@@ -56,7 +52,6 @@
     "image",
   ];
   const inputAutocompleteUnsaved = [
-    "off",
     "new-password",
     "current-password",
     "one-time-code",
@@ -72,60 +67,83 @@
     "webauthn",
   ];
 
-  //get the handle from the url, to identify the page later
-  const handle = window.location.href + "formsaver📌";
+  const savePage = async () => {
+    //get the handle from the url, to identify the page later
+    const handle = window.location.href + "formsaver📌";
+    //find any forms on the page, if there are none, stop the script
+    const forms = document.querySelectorAll("form");
+    if (!forms.length) return;
 
-  //check if there is already data for this page
-  const storedData = await chrome.runtime.sendMessage({ handle, get: true });
-  const prevData = storedData[handle] || {};
-  const saveInitial = Object.keys(prevData).length === 0;
+    //check if there is already data for this page
+    const storedData = await chrome.storage.local.get(handle);
+    const prevData = storedData[handle] || {};
+    const saveInitial = Object.keys(prevData).length === 0;
 
-  //loop through each form
-  forms.forEach((form) => {
-    //get the form xpath relative to the page
-    const formXpath = getXPath(form, "html");
-    if (!prevData[formXpath]) prevData[formXpath] = {};
-    const formData = prevData[formXpath] || {};
+    //loop through each form
+    forms.forEach((form) => {
+      //get the form xpath relative to the page
+      const formXpath = getXPath(form, "html");
+      if (!prevData[formXpath]) prevData[formXpath] = {};
+      const formData = prevData[formXpath] || {};
 
-    //get all the inputs in the form
-    const inputs = form.querySelectorAll("input");
-    const selects = form.querySelectorAll("select");
-    const textareas = form.querySelectorAll("textarea");
-    let allInputs = [...inputs, ...selects, ...textareas];
-    allInputs = allInputs.filter((input) => {
-      return (
-        !inputTypesUnsaved.includes(input.type) &&
-        !inputAutocompleteUnsaved.includes(input.autocomplete)
-      );
-    });
+      //get all the inputs in the form
+      const inputs = form.querySelectorAll("input");
+      const selects = form.querySelectorAll("select");
+      const textareas = form.querySelectorAll("textarea");
+      let allInputs = [...inputs, ...selects, ...textareas];
+      allInputs = allInputs.filter((input) => {
+        return (
+          !/\b(?:\d[ -]*?){13,16}\b/.test(input.value) &&
+          !inputTypesUnsaved.includes(input.type) &&
+          !inputAutocompleteUnsaved.includes(input.autocomplete)
+        );
+      });
 
-    //loop through each input
-    allInputs.forEach((input) => {
-      const inputXpath = getXPath(input, "form");
-      //if there is data for this input, set the value to the data
-      if (formData[inputXpath]) {
-        input.setAttribute("value", formData[inputXpath]);
-      } else {
-        formData[inputXpath] = input.value;
-      }
+      //loop through each input
+      allInputs.forEach((input) => {
+        const inputXpath = getXPath(input, "form");
+        //if there is data for this input, set the value to the data
+        if (formData[inputXpath]) {
+          input.setAttribute("value", formData[inputXpath]);
+        } else {
+          formData[inputXpath] = input.value;
+        }
 
-      //add an event listener to the input, so that when the value changes, it is saved to the object
-      input.addEventListener("change", async (e) => {
-        prevData[formXpath][inputXpath] = e.target.value;
-        await chrome.runtime.sendMessage({
-          handle,
-          set: true,
-          data: prevData,
+        //add an event listener to the input, so that when the value changes, it is saved to the object
+        input.addEventListener("change", async (e) => {
+          prevData[formXpath][inputXpath] = e.target.value;
+          await chrome.storage.local.set({
+            [handle]: prevData,
+          });
         });
       });
     });
+    //save the data to chrome storage
+    saveInitial && chrome.storage.local.set({ [handle]: prevData });
+  };
+
+  await savePage();
+
+  //add an event listener to the window, so that when the url changes, the page is saved again
+  const observer = new MutationObserver(async () => {
+    await savePage();
   });
 
-  //save the data to chrome storage
-  saveInitial && chrome.runtime.sendMessage({ handle, set: true, prevData });
+  observer.observe(document, {
+    subtree: true,
+    childList: true,
+    attributes: true,
+    attributeFilter: ["hidden"],
+    characterData: false,
+  });
+
+  window.addEventListener("locationchange", async () => {
+    await savePage();
+  });
 
   chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     if (message.clear) {
+      const handle = window.location.href + "formsaver📌";
       chrome.storage.local.remove(handle);
       const inputs = document.querySelectorAll("input");
       const selects = document.querySelectorAll("select");
