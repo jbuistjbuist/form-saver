@@ -68,6 +68,12 @@
   ];
 
   const savePage = async () => {
+    const disabled = await chrome.storage.sync.get(window.location.origin);
+    if (disabled[window.location.origin]) {
+      chrome.storage.local.remove(window.location.href + "formsaver📌");
+      return;
+    }
+
     //get the handle from the url, to identify the page later
     const handle = window.location.href + "formsaver📌";
     //find any forms on the page, if there are none, stop the script
@@ -148,7 +154,14 @@
       const inputs = document.querySelectorAll("input");
       const selects = document.querySelectorAll("select");
       const textareas = document.querySelectorAll("textarea");
-      const allInputs = [...inputs, ...selects, ...textareas];
+      let allInputs = [...inputs, ...selects, ...textareas];
+      allInputs = allInputs.filter((input) => {
+        return (
+          !/\b(?:\d[ -]*?){13,16}\b/.test(input.value) &&
+          !inputTypesUnsaved.includes(input.type) &&
+          !inputAutocompleteUnsaved.includes(input.autocomplete)
+        );
+      });
       allInputs.forEach((input) => {
         input.setAttribute("value", "");
       });
