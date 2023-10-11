@@ -104,27 +104,63 @@ input:checked + .slider:before {
   border-radius: 50%;
 }
 
-.clear_button {
+.danger_button {
   text-align: center;
   border-radius: 15px;
   height: 30px;
-  width: 80px;
+  /* width: 80px; */
   border: none;
   margin-top: 0.2rem;
   background-color: #faf9f6;
   transition: ease-in-out 0.1s;
 }
 
-.clear_button:hover {
+.danger_button:hover {
   background-color: #b63929;
   color: #faf9f6;
   cursor: pointer;
 }
 
-.clear_button:active {
+.danger_button:active {
   transform: scale(1.1);
 }
 
-.clear_button.disabled {
+.danger_button.disabled {
   background-color: #7d7d7d;
+}
+
+#settings {
+  position: absolute;
+  border: none;
+  background-color: transparent;
+  color: #faf9f6;
+  bottom: 4;
+  right: 4;
+  text-decoration: underline;
+  font-size: 0.6rem;
+}
+
+#settings:hover {
+  cursor: pointer;
+  color: #0f9733;
+}
+
+#options {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  left: 0;
+  top: 0;
+  background-color: #1f1f1f;
+  display: flex;
+  flex-flow: column nowrap;
+  justify-content: center;
+  align-items: center;
+  gap: 0.8rem;
+  height: 100%;
+  width: 100%;
+}
+
+.hidden {
+  display: none !important;
 }

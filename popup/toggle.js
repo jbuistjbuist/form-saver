@@ -4,7 +4,14 @@
   clearButton.addEventListener("click", () => {
     chrome.tabs.query({ currentWindow: true, active: true }, function (tabs) {
       var activeTab = tabs[0];
-      chrome.tabs.sendMessage(activeTab.id, { clear: true });
+      chrome.tabs.sendMessage(activeTab.id, { clear: true }, (response) => {
+        if (response.success) {
+          clearButton.innerText = "Cleared!";
+          setTimeout(() => {
+            clearButton.innerText = "Clear Form";
+          }, 1000);
+        }
+      });
     });
   });
 
@@ -43,5 +50,40 @@
         }
       });
     });
+  });
+
+  const settingsButton = document.getElementById("settings");
+  settingsButton.addEventListener("click", () => {
+    if (settingsButton.innerText === "Settings") {
+      settingsButton.innerText = "Close";
+      document.getElementById("options").className = "";
+    } else {
+      settingsButton.innerText = "Settings";
+      document.getElementById("options").className = "hidden";
+    }
+  });
+
+  const clearAllButton = document.getElementById("clear_all");
+
+  clearAllButton.addEventListener("click", () => {
+    if (
+      !confirm(
+        "Are you sure you want to clear all of your saved form data? This cannot be undone."
+      )
+    ) {
+      return;
+    }
+    chrome.storage.local.clear().then(() => {
+      alert("All form data cleared.");
+    });
+  });
+
+  const disableButton = document.getElementById("disable_extension");
+
+  disableButton.addEventListener("click", () => {
+    if (!confirm("Are you sure you want to disable this extension?")) {
+      return;
+    }
+    chrome.management.setEnabled(chrome.runtime.id, false);
   });
 })();

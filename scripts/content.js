@@ -1,7 +1,7 @@
 (async () => {
   //credit to Ab. Karim, https://dev.to/abkarim/html-element-to-absolute-xpath-selector-javascript-4g82 for this xpath function
   //this function takes an element and returns its xpath, to identify it later
-  function getXPath(element, root) {
+  const getXPath = (element, root) => {
     let selector = "";
     let foundRoot;
     let current = element;
@@ -40,7 +40,7 @@
     } while (!foundRoot);
 
     return selector;
-  }
+  };
 
   const inputTypesUnsaved = [
     "password",
@@ -67,6 +67,21 @@
     "cc-type",
     "webauthn",
   ];
+
+  const getAllInputs = (node) => {
+    const inputs = node.querySelectorAll("input");
+    const selects = node.querySelectorAll("select");
+    const textareas = node.querySelectorAll("textarea");
+    let allInputs = [...inputs, ...selects, ...textareas];
+    allInputs = allInputs.filter((input) => {
+      return (
+        !/\b(?:\d[ -]*?){13,16}\b/.test(input.value) &&
+        !inputTypesUnsaved.includes(input.type) &&
+        !inputAutocompleteUnsaved.includes(input.autocomplete)
+      );
+    });
+    return allInputs;
+  };
 
   const savePage = async () => {
     //get the handle from the url, to identify the page later
@@ -117,18 +132,7 @@
       const formData = prevData[formId] || {};
 
       //get all the inputs in the form
-      const inputs = form.querySelectorAll("input");
-      const selects = form.querySelectorAll("select");
-      const textareas = form.querySelectorAll("textarea");
-      let allInputs = [...inputs, ...selects, ...textareas];
-      allInputs = allInputs.filter((input) => {
-        return (
-          !/\b(?:\d[ -]*?){13,16}\b/.test(input.value) &&
-          !inputTypesUnsaved.includes(input.type) &&
-          !inputAutocompleteUnsaved.includes(input.autocomplete)
-        );
-      });
-
+      const allInputs = getAllInputs(form);
       //loop through each input
       allInputs.forEach((input) => {
         const inputId = input.id || getXPath(input, "orphan" ? "body" : "form");
@@ -187,19 +191,13 @@
     if (message.clear) {
       const handle = window.location.href + "formsaver📌";
       chrome.storage.local.remove(handle);
-      const inputs = document.querySelectorAll("input");
-      const selects = document.querySelectorAll("select");
-      const textareas = document.querySelectorAll("textarea");
-      let allInputs = [...inputs, ...selects, ...textareas];
-      allInputs = allInputs.filter((input) => {
-        return (
-          !/\b(?:\d[ -]*?){13,16}\b/.test(input.value) &&
-          !inputTypesUnsaved.includes(input.type) &&
-          !inputAutocompleteUnsaved.includes(input.autocomplete)
-        );
-      });
+      const allInputs = getAllInputs(document);
       allInputs.forEach((input) => {
-        input.setAttribute("value", "");
+        if (input.type === "radio" || input.type === "checkbox") {
+          input.removeAttribute("checked");
+        } else {
+          input.setAttribute("value", "");
+        }
       });
       sendResponse({ success: true });
     }

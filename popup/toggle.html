@@ -23,10 +23,23 @@
           <input type="checkbox" id="toggle" />
           <span class="slider round"></span>
         </label>
-        <button class="clear_button" id="clear_button" type="button">
+        <button
+          class="clear_button danger_button"
+          id="clear_button"
+          type="button"
+        >
           Clear Form
         </button>
       </main>
+      <section id="options" class="hidden">
+        <button id="clear_all" class="danger_button" type="button">
+          Clear All Form Data
+        </button>
+        <button id="disable_extension" class="danger_button" type="button">
+          Disable Extension Globally
+        </button>
+      </section>
+      <button id="settings" type="button">Settings</button>
     </div>
   </body>
 </html>
