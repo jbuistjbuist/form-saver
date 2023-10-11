@@ -46,6 +46,32 @@
     return selector;
   }
 
+  const inputTypesUnsaved = [
+    "password",
+    "file",
+    "hidden",
+    "submit",
+    "reset",
+    "button",
+    "image",
+  ];
+  const inputAutocompleteUnsaved = [
+    "off",
+    "new-password",
+    "current-password",
+    "one-time-code",
+    "cc-name",
+    "cc-given-name",
+    "cc-additional-name",
+    "cc-number",
+    "cc-exp",
+    "cc-exp-month",
+    "cc-exp-year",
+    "cc-csc",
+    "cc-type",
+    "webauthn",
+  ];
+
   //get the handle from the url, to identify the page later
   const handle = window.location.href + "formsaver📌";
 
@@ -65,7 +91,13 @@
     const inputs = form.querySelectorAll("input");
     const selects = form.querySelectorAll("select");
     const textareas = form.querySelectorAll("textarea");
-    const allInputs = [...inputs, ...selects, ...textareas];
+    let allInputs = [...inputs, ...selects, ...textareas];
+    allInputs = allInputs.filter((input) => {
+      return (
+        !inputTypesUnsaved.includes(input.type) &&
+        !inputAutocompleteUnsaved.includes(input.autocomplete)
+      );
+    });
 
     //loop through each input
     allInputs.forEach((input) => {
@@ -89,6 +121,9 @@
     });
   });
 
+  //save the data to chrome storage
+  saveInitial && chrome.runtime.sendMessage({ handle, set: true, prevData });
+
   chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     if (message.clear) {
       chrome.storage.local.remove(handle);
@@ -102,6 +137,4 @@
       sendResponse({ success: true });
     }
   });
-  //save the data to chrome storage
-  saveInitial && chrome.runtime.sendMessage({ handle, set: true, prevData });
 })();
