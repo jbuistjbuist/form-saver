@@ -51,6 +51,7 @@
     "button",
     "image",
   ];
+
   const inputAutocompleteUnsaved = [
     "new-password",
     "current-password",
@@ -68,18 +69,41 @@
   ];
 
   const savePage = async () => {
+    //get the handle from the url, to identify the page later
+    const handle = window.location.href + "formsaver📌";
+
     const disabled = await chrome.storage.sync.get(window.location.origin);
     if (disabled[window.location.origin]) {
-      chrome.storage.local.remove(window.location.href + "formsaver📌");
+      chrome.storage.local.remove(handle);
       return;
     }
 
-    //get the handle from the url, to identify the page later
-    const handle = window.location.href + "formsaver📌";
     //find any forms on the page, if there are none, stop the script
-    const forms = document.querySelectorAll("form");
-    if (!forms.length) return;
+    const forms = Array.from(document.querySelectorAll("form")) || [];
+    const orphanInputs = document.querySelectorAll("input:not(form input)");
+    const orphanSelects = document.querySelectorAll("select:not(form select)");
+    const orphanTextareas = document.querySelectorAll(
+      "textarea:not(form textarea)"
+    );
 
+    if (!forms.length && !orphanInputs.length) return;
+
+    if (orphanInputs.length) {
+      forms.push({
+        id: "orphan",
+        action: "orphan",
+        querySelectorAll: (query) => {
+          switch (query) {
+            case "input":
+              return orphanInputs;
+            case "select":
+              return orphanSelects;
+            case "textarea":
+              return orphanTextareas;
+          }
+        },
+      });
+    }
     //check if there is already data for this page
     const storedData = await chrome.storage.local.get(handle);
     const prevData = storedData[handle] || {};
@@ -88,9 +112,9 @@
     //loop through each form
     forms.forEach((form) => {
       //get the form xpath relative to the page
-      const formXpath = getXPath(form, "html");
-      if (!prevData[formXpath]) prevData[formXpath] = {};
-      const formData = prevData[formXpath] || {};
+      const formId = form.id || form.action || getXPath(form, "body");
+      if (!prevData[formId]) prevData[formId] = {};
+      const formData = prevData[formId] || {};
 
       //get all the inputs in the form
       const inputs = form.querySelectorAll("input");
@@ -107,17 +131,29 @@
 
       //loop through each input
       allInputs.forEach((input) => {
-        const inputXpath = getXPath(input, "form");
+        const inputId = input.id || getXPath(input, "orphan" ? "body" : "form");
         //if there is data for this input, set the value to the data
-        if (formData[inputXpath]) {
-          input.setAttribute("value", formData[inputXpath]);
+        if (formData[inputId]) {
+          if (input.type === "radio" || input.type === "checkbox") {
+            input.setAttribute("checked", formData[inputId]);
+          } else {
+            input.setAttribute("value", formData[inputId]);
+          }
         } else {
-          formData[inputXpath] = input.value;
+          if (input.type === "radio" || input.type === "checkbox") {
+            formData[inputId] = input.checked;
+          } else {
+            formData[inputId] = input.value;
+          }
         }
 
         //add an event listener to the input, so that when the value changes, it is saved to the object
-        input.addEventListener("change", async (e) => {
-          prevData[formXpath][inputXpath] = e.target.value;
+        input.addEventListener("input", async (e) => {
+          if (e.target.type === "radio" || e.target.type === "checkbox") {
+            prevData[formId][inputId] = e.target.checked;
+          } else {
+            prevData[formId][inputId] = e.target.value;
+          }
           await chrome.storage.local.set({
             [handle]: prevData,
           });
