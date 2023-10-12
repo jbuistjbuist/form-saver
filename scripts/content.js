@@ -82,6 +82,8 @@
       !/^(0[1-9]|1[0-2])\/?([0-9]{4}|[0-9]{2})$/.test(text?.trim()) &&
       // regex to check if the text is a cvv
       !/^[0-9]{3,4}$/.test(text?.trim()) &&
+      // regex to check if the text is a sin number
+      !/\b(?:\d[ -]*?){9}\b/.test(text?.trim()) &&
       // regex to check if the text is likely to be a password
       !/^(?=.*[0-9])(?=.*[!@#$%^&*])[a-zA-Z0-9!@#$%^&*]{6,32}$/.test(
         text?.trim()

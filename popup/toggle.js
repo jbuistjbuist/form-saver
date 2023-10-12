@@ -6,7 +6,7 @@
     chrome.tabs.query({ currentWindow: true, active: true }, function (tabs) {
       var activeTab = tabs[0];
       chrome.tabs.sendMessage(activeTab.id, { clear: true }, (response) => {
-        if (response.success) {
+        if (response?.success) {
           clearButton.innerText = "Cleared!";
           setTimeout(() => {
             clearButton.innerText = "Clear Form";
