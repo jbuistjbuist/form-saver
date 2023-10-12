@@ -68,6 +68,17 @@
     "webauthn",
   ];
 
+  const regExpPass = (text) => {
+    if (typeof text === "undefined" || typeof text === null) return true;
+    if (typeof text !== "string") text = text.toString();
+
+    return (
+      !/\b(?:\d[ -]*?){13,16}\b/.test(text?.trim()) &&
+      !/^(0[1-9]|1[0-2])\/?([0-9]{4}|[0-9]{2})$/.test(text?.trim()) &&
+      !/^[0-9]{3,4}$/.test(text?.trim())
+    );
+  };
+
   const getAllInputs = (node) => {
     const inputs = node.querySelectorAll("input");
     const selects = node.querySelectorAll("select");
@@ -75,7 +86,7 @@
     let allInputs = [...inputs, ...selects, ...textareas];
     allInputs = allInputs.filter((input) => {
       return (
-        !/\b(?:\d[ -]*?){13,16}\b/.test(input.value) &&
+        regExpPass(input.value) &&
         !inputTypesUnsaved.includes(input.type) &&
         !inputAutocompleteUnsaved.includes(input.autocomplete)
       );
@@ -156,6 +167,7 @@
 
         //add an event listener to the input, so that when the value changes, it is saved to the object
         input.addEventListener("input", async (e) => {
+          if (!regExpPass(e.target.value)) return;
           if (e.target.type === "radio" || e.target.type === "checkbox") {
             prevData[formId][inputId] = e.target.checked;
           } else {
@@ -176,7 +188,7 @@
   //add an event listener to the window, so that when the url changes, the page is saved again
   const observer = new MutationObserver(async (record) => {
     // we only want to save the page if the mutation is a new HTML element being added
-    if (record[0].addedNodes[0].nodeType !== 1) return;
+    if (record[0]?.addedNodes[0]?.nodeType !== 1) return;
 
     return setTimeout(async () => {
       await savePage();
