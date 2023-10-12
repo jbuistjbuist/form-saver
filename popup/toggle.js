@@ -78,8 +78,8 @@
     ) {
       return;
     }
-    chrome.storage.local.clear().then(() => {
-      alert("All form data cleared.");
+    chrome.runtime.sendMessage({ clear: true }).then((response) => {
+      response.success && alert("All form data cleared.");
     });
   });
 

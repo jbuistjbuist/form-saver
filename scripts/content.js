@@ -72,7 +72,7 @@
 
   //to be safe, we will also check the value of inputa against several regex expressions to see if it is likely to be a password or other sensitive data
   const regExpPass = (text) => {
-    if (typeof text === "undefined" || typeof text === null) return true;
+    if (typeof text === "undefined") return true;
     if (typeof text !== "string") text = text.toString();
 
     return (
@@ -82,7 +82,7 @@
       !/^(0[1-9]|1[0-2])\/?([0-9]{4}|[0-9]{2})$/.test(text?.trim()) &&
       // regex to check if the text is a cvv
       !/^[0-9]{3,4}$/.test(text?.trim()) &&
-      // regex to check if the text is a sin number
+      // regex to check if the text might be a sin number
       !/\b(?:\d[ -]*?){9}\b/.test(text?.trim()) &&
       // regex to check if the text is likely to be a password
       !/^(?=.*[0-9])(?=.*[!@#$%^&*])[a-zA-Z0-9!@#$%^&*]{6,32}$/.test(
@@ -115,7 +115,7 @@
     //check if the page is disabled, if it is, stop the script
     const disabled = await chrome.storage.sync.get(window.location.origin);
     if (disabled[window.location.origin]) {
-      chrome.storage.local.remove(handle);
+      await chrome.runtime.sendMessage({ remove: handle });
       return;
     }
 
@@ -149,7 +149,7 @@
       });
     }
     //check if there is already data for this page
-    const storedData = await chrome.storage.local.get(handle);
+    const storedData = await chrome.runtime.sendMessage({ get: handle });
     const prevData = storedData[handle] || {};
     const saveInitial = Object.keys(prevData).length === 0;
 
@@ -197,14 +197,13 @@
           } else {
             prevData[formId][inputId] = e.target.value;
           }
-          await chrome.storage.local.set({
-            [handle]: prevData,
-          });
+          await chrome.runtime.sendMessage({ set: { [handle]: prevData } });
         });
       });
     });
     //save the data to chrome storage, but only if there was no data before
-    saveInitial && chrome.storage.local.set({ [handle]: prevData });
+    saveInitial &&
+      (await chrome.runtime.sendMessage({ set: { [handle]: prevData } }));
   };
 
   await savePage();
@@ -235,7 +234,7 @@
   chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     if (message.clear) {
       const handle = window.location.href + "formsaver📌";
-      chrome.storage.local.remove(handle);
+      const response = chrome.runtime.sendMessage({ remove: handle });
       const allInputs = getAllInputs(document);
       allInputs.forEach((input) => {
         if (input.type === "radio" || input.type === "checkbox") {
@@ -244,7 +243,7 @@
           input.setAttribute("value", "");
         }
       });
-      sendResponse({ success: true });
+      if (response.success) sendResponse({ success: true });
     }
   });
 })();
