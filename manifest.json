@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Form Cache",
-  "description": "Persist form data across page reloads and navigation. Saves you from entering the same data twice if you refresh a page or navigate away from it.",
+  "description": "Persist form data across page reloads and navigation during a browser session. Saves you from entering the same data twice if you refresh a page or navigate away from it.",
   "version": "1.0",
   "action": {
     "default_popup": "popup/toggle.html",
