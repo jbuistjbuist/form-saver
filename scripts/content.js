@@ -77,7 +77,7 @@
 
     return (
       // regex to check if the text is a credit card number
-      !/\b(?:\d[ -]*?){13,16}\b/.test(text?.trim()) &&
+      !/\b(?:\d[ -]*?){13,19}\b/.test(text?.trim()) &&
       // regex to check if the text is a expiration date
       !/^(0[1-9]|1[0-2])\/?([0-9]{4}|[0-9]{2})$/.test(text?.trim()) &&
       // regex to check if the text is a cvv
