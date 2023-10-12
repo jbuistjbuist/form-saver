@@ -129,17 +129,20 @@
       //get the form xpath relative to the page
       const formId = form.id || form.action || getXPath(form, "body");
       if (!prevData[formId]) prevData[formId] = {};
-      const formData = prevData[formId] || {};
+      const formData = prevData[formId];
 
       //get all the inputs in the form
       const allInputs = getAllInputs(form);
       //loop through each input
       allInputs.forEach((input) => {
-        const inputId = input.id || getXPath(input, "orphan" ? "body" : "form");
+        const inputId =
+          input.id || getXPath(input, formId === "orphan" ? "body" : "form");
         //if there is data for this input, set the value to the data
         if (formData[inputId]) {
           if (input.type === "radio" || input.type === "checkbox") {
             input.setAttribute("checked", formData[inputId]);
+          } else if (input.tagName === "TEXTAREA") {
+            input.innerHTML = formData[inputId];
           } else {
             input.setAttribute("value", formData[inputId]);
           }
@@ -171,8 +174,13 @@
   await savePage();
 
   //add an event listener to the window, so that when the url changes, the page is saved again
-  const observer = new MutationObserver(async () => {
-    await savePage();
+  const observer = new MutationObserver(async (record) => {
+    // we only want to save the page if the mutation is a new HTML element being added
+    if (record[0].addedNodes[0].nodeType !== 1) return;
+
+    return setTimeout(async () => {
+      await savePage();
+    }, 100);
   });
 
   observer.observe(document, {
