@@ -1,4 +1,5 @@
 (async () => {
+  //send a message to the content script to clear the form data, then update the button text
   const clearButton = document.getElementById("clear_button");
 
   clearButton.addEventListener("click", () => {
@@ -15,6 +16,8 @@
     });
   });
 
+  //when the user clicks the toggle button, toggle the extension on or off for the current site and update the button text.
+  //we also need to update the button when the popup is opened, so we do that here too
   const toggleButton = document.getElementById("toggle");
   const toggleText = document.getElementById("toggle_text");
 
@@ -52,6 +55,7 @@
     });
   });
 
+  //when the user clicks the settings button, show or hide the settings menu
   const settingsButton = document.getElementById("settings");
   settingsButton.addEventListener("click", () => {
     if (settingsButton.innerText === "Settings") {
@@ -63,6 +67,7 @@
     }
   });
 
+  //when the user clicks the clear all button, clear all of the form data for all sites, after confirming that they want to do so
   const clearAllButton = document.getElementById("clear_all");
 
   clearAllButton.addEventListener("click", () => {
@@ -78,6 +83,7 @@
     });
   });
 
+  //when the user clicks the disable extension button, disable the extension after confirming that they want to do so
   const disableButton = document.getElementById("disable_extension");
 
   disableButton.addEventListener("click", () => {

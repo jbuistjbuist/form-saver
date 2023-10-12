@@ -42,6 +42,7 @@
     return selector;
   };
 
+  //these are the input types that we don't want to save, anything that could be a password or other sensitive data, or that is not editable
   const inputTypesUnsaved = [
     "password",
     "file",
@@ -52,6 +53,7 @@
     "image",
   ];
 
+  //these are the autocomplete types that we don't want to save, anything that could be a password or other sensitive data
   const inputAutocompleteUnsaved = [
     "new-password",
     "current-password",
@@ -68,17 +70,24 @@
     "webauthn",
   ];
 
+  //to be safe, we will also check the value of inputa against several regex expressions to see if it is likely to be a password or other sensitive data
   const regExpPass = (text) => {
     if (typeof text === "undefined" || typeof text === null) return true;
     if (typeof text !== "string") text = text.toString();
 
     return (
+      // regex to check if the text is a credit card number
       !/\b(?:\d[ -]*?){13,16}\b/.test(text?.trim()) &&
+      // regex to check if the text is a expiration date
       !/^(0[1-9]|1[0-2])\/?([0-9]{4}|[0-9]{2})$/.test(text?.trim()) &&
-      !/^[0-9]{3,4}$/.test(text?.trim())
+      // regex to check if the text is a cvv
+      !/^[0-9]{3,4}$/.test(text?.trim()) && 
+      // regex to check if the text is likely to be a password
+      !/^(?=.*[0-9])(?=.*[!@#$%^&*])[a-zA-Z0-9!@#$%^&*]{6,32}$/.test(text?.trim())
     );
   };
 
+  //this function gets all the inputs on the page that we want to save
   const getAllInputs = (node) => {
     const inputs = node.querySelectorAll("input");
     const selects = node.querySelectorAll("select");
@@ -94,10 +103,12 @@
     return allInputs;
   };
 
+  //this function is the main function to save the page and restore it later
   const savePage = async () => {
     //get the handle from the url, to identify the page later
     const handle = window.location.href + "formsaver📌";
 
+    //check if the page is disabled, if it is, stop the script
     const disabled = await chrome.storage.sync.get(window.location.origin);
     if (disabled[window.location.origin]) {
       chrome.storage.local.remove(handle);
@@ -106,6 +117,8 @@
 
     //find any forms on the page, if there are none, stop the script
     const forms = Array.from(document.querySelectorAll("form")) || [];
+
+    //check for orphan inputs, selects, and textareas that are not in a form
     const orphanInputs = document.querySelectorAll("input:not(form input)");
     const orphanSelects = document.querySelectorAll("select:not(form select)");
     const orphanTextareas = document.querySelectorAll(
@@ -114,6 +127,7 @@
 
     if (!forms.length && !orphanInputs.length) return;
 
+    //if there are orphan inputs, add a pseudo form to the forms array
     if (orphanInputs.length) {
       forms.push({
         id: "orphan",
@@ -139,6 +153,8 @@
     forms.forEach((form) => {
       //get the form xpath relative to the page
       const formId = form.id || form.action || getXPath(form, "body");
+
+      //if there is no data for this form, create an empty object
       if (!prevData[formId]) prevData[formId] = {};
       const formData = prevData[formId];
 
@@ -146,6 +162,7 @@
       const allInputs = getAllInputs(form);
       //loop through each input
       allInputs.forEach((input) => {
+        //get the input xpath relative to the form if possible (less work), otherwise relative to the body
         const inputId =
           input.id || getXPath(input, formId === "orphan" ? "body" : "form");
         //if there is data for this input, set the value to the data
@@ -167,7 +184,9 @@
 
         //add an event listener to the input, so that when the value changes, it is saved to the object
         input.addEventListener("input", async (e) => {
+          //check if the input is a password or other sensitive data, if it is, don't save it
           if (!regExpPass(e.target.value)) return;
+
           if (e.target.type === "radio" || e.target.type === "checkbox") {
             prevData[formId][inputId] = e.target.checked;
           } else {
@@ -179,13 +198,13 @@
         });
       });
     });
-    //save the data to chrome storage
+    //save the data to chrome storage, but only if there was no data before
     saveInitial && chrome.storage.local.set({ [handle]: prevData });
   };
 
   await savePage();
 
-  //add an event listener to the window, so that when the url changes, the page is saved again
+  //observe for mutations to the page, so that we can save the page when it changes
   const observer = new MutationObserver(async (record) => {
     // we only want to save the page if the mutation is a new HTML element being added
     if (record[0]?.addedNodes[0]?.nodeType !== 1) return;
@@ -207,6 +226,7 @@
     await savePage();
   });
 
+  //listen for messages from the popup, for now we only have one message, to clear the data for the page
   chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     if (message.clear) {
       const handle = window.location.href + "formsaver📌";
