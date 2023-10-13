@@ -156,7 +156,7 @@
     //loop through each form
     forms.forEach((form) => {
       //get the form xpath relative to the page
-      const formId = form.id || form.action || getXPath(form, "body");
+      const formId = form.id || getXPath(form, "body");
 
       //if there is no data for this form, create an empty object
       if (!prevData[formId]) prevData[formId] = {};
