@@ -211,7 +211,7 @@
   //observe for mutations to the page, so that we can save the page when it changes
   const observer = new MutationObserver(async (record) => {
     // we only want to save the page if the mutation is a new HTML element being added
-    if (record[0]?.addedNodes[0]?.nodeType !== 1) return;
+    if (!record.some((r) => r.target.tagName === "INPUT" || r.target.tagName === "SELECT" || r.target.tagName === "TEXTAREA" || r.target.tagName === "FORM")) return;
 
     return setTimeout(async () => {
       await savePage();
